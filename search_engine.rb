@@ -42,6 +42,7 @@ class SearchEngine
   end
   
   def step2
+    construct_prompt
     puts "Select 1) Users 2) Tickets or 3) Organizations"
     type_index = gets.chomp
     return if type_index == 'quit'
@@ -74,6 +75,15 @@ class SearchEngine
     print_search
     @results = search
     printout
+  end
+  
+  def construct_prompt
+    string = "Select "
+    types = []
+    FILE_TYPES.each_with_index do |file_type, i|
+      types << "#{i+1}) #{file_type.capitalize}"
+    end
+    string << types.join(", ")
   end
 
   def valid_search_terms(type)
