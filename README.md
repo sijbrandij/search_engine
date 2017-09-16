@@ -22,4 +22,5 @@ To add a new record type to the search engine (f.e. events), follow these steps:
 1. create a json file `events.json` and add it to the document root
 2. add the file_type to `FILE_TYPES` at the top of `search_engine.rb`
 3. if your new record type has any fields that contain an array as values, add the field to the `has_array_value?` method to ensure proper search and display
-4. if there are any integer fields in your records, make sure to name the field appropriately: anything that ends with `_id` will be converted to Integer, except for `external_id`
+4. if there are any id fields in your records, make sure to name the field appropriately: anything that ends with `_id` will be converted to Integer, except for `external_id`
+5. if there are any other integer fields, modify the `convert_value` method accordingly
