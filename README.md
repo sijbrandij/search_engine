@@ -5,8 +5,14 @@ This is an implementation of a search engine. The application loads its data fro
 
 ## System requirements
 * Ruby
-* JSON; to test whether you have JSON, you can start a console using `irb` and type `require 'json'`. This should return `true`. If not, close the console and run `gem install json` to install JSON.
+* JSON
 
+To test whether you have JSON, follow these steps in a console:
+```
+require 'json'
+ => true
+```
+If this returns `false`, run `gem install json` in your terminal.
 ## Instructions for use
 
 Go to the document root in your terminal and type `ruby search_engine.rb` to start a new search.
