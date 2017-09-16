@@ -3,6 +3,10 @@
 ## Description
 This is an implementation of a search engine. The application loads its data from 3 `json` files containing different resources. The user interacts with the search engine through the terminal. 
 
+## System requirements
+* Ruby
+* JSON; to test whether you have JSON, you can start a console using `irb` and type `require 'json'`. This should return `true`. If not, close the console and run `gem install json` to install JSON.
+
 ## Instructions for use
 
 Go to the document root in your terminal and type `ruby search_engine.rb` to start a new search.
