@@ -1,3 +1,5 @@
+require 'minitest/autorun'
+
 class SearchEngine
   require 'json'
   
@@ -24,12 +26,8 @@ class SearchEngine
     puts "\n"
   end
   
-  def check_for_quit(command)
-    
-  end
-  
   def step1
-    command = gets.chomp
+    command = get_user_input
     return if command == 'quit'
     if %w(1 2).include?(command)
       if command == '2'
@@ -37,20 +35,28 @@ class SearchEngine
       end
       step2
     else
-      puts "Invalid input"
+      signal_invalid_input
     end
+  end
+  
+  def get_user_input
+    gets.chomp
+  end
+  
+  def signal_invalid_input
+    puts "Invalid input"
   end
   
   def step2
     construct_prompt
     puts "Select 1) Users 2) Tickets or 3) Organizations"
-    type_index = gets.chomp
+    type_index = get_user_input
     return if type_index == 'quit'
     if [1,2,3].include?(type_index.to_i) # non-numerical inputs will be converted to 0
       @type = FILE_TYPES[type_index.to_i-1]
       step3
     else
-      puts "Invalid input"
+      signal_invalid_input
       step2
     end
   end
@@ -58,19 +64,19 @@ class SearchEngine
   def step3
     puts "You can search #{@type} for the following search terms: #{valid_search_terms(@type).join(", ")}.\n"
     puts "Enter search term"
-    @term = gets.chomp
+    @term = get_user_input
     return if @term == 'quit'
     if valid_search_terms(@type).include?(@term)
       step4
     else
-      puts "Invalid input"
+      signal_invalid_input
       step3
     end
   end
   
   def step4
     puts "Enter search value"
-    @value = gets.chomp
+    @value = get_user_input
     return if @value == 'quit'
     print_search
     @results = search
