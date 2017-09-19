@@ -51,7 +51,7 @@ class SearchEngine
   def set_type(command=nil)
     stdout_or_return(type_prompt)
     command ||= get_user_input
-    return false if type_index == 'quit'
+    return false if command == 'quit'
     type_index = command
     if [1,2,3].include?(type_index.to_i) # non-numerical inputs will be converted to 0
       @type = FILE_TYPES[type_index.to_i-1]
@@ -68,7 +68,7 @@ class SearchEngine
     ]
     stdout_or_return(prompt)
     command ||= get_user_input
-    return false if @term == 'quit'
+    return false if command == 'quit'
     @term = command
     if valid_search_terms(@type).include?(@term)
       true
@@ -80,7 +80,7 @@ class SearchEngine
   def set_value(command=nil)
     stdout_or_return(["Enter search value"])
     command ||= get_user_input
-    return false if @value == 'quit'
+    return false if command == 'quit'
     @value = command
     true
   end
@@ -188,9 +188,47 @@ class SearchEngine
     result.each do |key, value|
       result_output.push(format_output(key, value))
     end
-    # TODO find associated records (users, organizations and tickets)
+    result_output = result_output + find_associated_records(result)
     result_output.push("\n")
     result_output
+  end
+  
+  def find_associated_records(result)
+    output = []
+    return if @type == 'organizations'
+    output.push(get_organization(result))
+    if @type == 'users'
+      data = get_json('tickets')
+      submitted_tickets = data.select{ |ticket| ticket['submitter_id'] == result['_id'] }
+      assigned_tickets = data.select{ |ticket| ticket['assignee_id'] == result['_id'] }
+      submitted_tickets.each_with_index do |ticket, i|
+        output.push(format_ticket(ticket['subject'], i, 'submitted'))
+      end
+      assigned_tickets.each_with_index do |ticket, i|
+        output.push(format_ticket(ticket['subject'], i, 'assigned'))
+      end
+    elsif @type == 'tickets'
+      data = get_json('users')
+      submitter = data.select{ |user| user['_id'] == result['submitter_id'] }.first
+      assignee = data.select{ |user| user['_id'] == result['assignee_id'] }.first
+      output.push(format_user(submitter['name'], 'submitter'))
+      output.push(format_user(assignee['name'], 'assignee'))
+    end
+    output
+  end
+  
+  def format_user(name, modifier)
+    sprintf("%-20s %s \n", modifier, name)
+  end
+  
+  def format_ticket(subject, index, modifier)
+    sprintf("%-20s %s \n", "#{modifier} ticket#{index}", subject)
+  end
+  
+  def get_organization(result)
+    data = get_json('organizations')
+    organization = data.select{|org| org['_id'] == result['organization_id'] }.first
+    sprintf("%-20s %s \n", 'organization', organization['name'])
   end
   
   def search_empty_values(data)
