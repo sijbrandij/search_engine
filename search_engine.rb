@@ -152,83 +152,9 @@ class SearchEngine
     false
   end
   
-  def format_output(key, value)
-    if has_array_value?(key)
-      sprintf("%-20s %s \n", key, value.join(", "))
-    else
-      sprintf("%-20s %s \n", key, value)
-    end
-  end
-  
-  def has_array_value?(key)
-    # include any attribute with an array value in this list for proper searching and formatting
-    %w(tags domain_names).include?(key)
-  end
-  
   def get_json(type)
     file = File.read("#{type}.json")
     JSON.parse(file)
-  end
-
-  def printout
-    output = []
-    if @results.any?
-      @results.each do |result|
-        output.push(format_result(result))
-      end
-      output.push("#{@results.count} record#{ @results.one? ? "" : "s"} found.")
-    else
-      output.push("No records found.")
-    end
-    stdout_or_return(output.flatten.compact)
-  end
-
-  def format_result(result)
-    result_output = []
-    result.each do |key, value|
-      result_output.push(format_output(key, value))
-    end
-    result_output = result_output + find_associated_records(result)
-    result_output.push("\n")
-    result_output
-  end
-  
-  def find_associated_records(result)
-    output = []
-    return if @type == 'organizations'
-    output.push(get_organization(result))
-    if @type == 'users'
-      data = get_json('tickets')
-      submitted_tickets = data.select{ |ticket| ticket['submitter_id'] == result['_id'] }
-      assigned_tickets = data.select{ |ticket| ticket['assignee_id'] == result['_id'] }
-      submitted_tickets.each_with_index do |ticket, i|
-        output.push(format_ticket(ticket['subject'], i, 'submitted'))
-      end
-      assigned_tickets.each_with_index do |ticket, i|
-        output.push(format_ticket(ticket['subject'], i, 'assigned'))
-      end
-    elsif @type == 'tickets'
-      data = get_json('users')
-      submitter = data.select{ |user| user['_id'] == result['submitter_id'] }.first
-      assignee = data.select{ |user| user['_id'] == result['assignee_id'] }.first
-      output.push(format_user(submitter['name'], 'submitter'))
-      output.push(format_user(assignee['name'], 'assignee'))
-    end
-    output
-  end
-  
-  def format_user(name, modifier)
-    sprintf("%-20s %s \n", modifier, name)
-  end
-  
-  def format_ticket(subject, index, modifier)
-    sprintf("%-20s %s \n", "#{modifier} ticket#{index}", subject)
-  end
-  
-  def get_organization(result)
-    data = get_json('organizations')
-    organization = data.select{|org| org['_id'] == result['organization_id'] }.first
-    sprintf("%-20s %s \n", 'organization', organization['name'])
   end
   
   def search_empty_values(data)
@@ -252,6 +178,88 @@ class SearchEngine
     end
     output.push("Select " + types.join(", "))
   end
+  
+  # Formatting methods
+  
+  def printout
+    output = []
+    if @results.any?
+      @results.each do |result|
+        output.push(format_result(result))
+      end
+      output.push("#{@results.count} record#{ @results.one? ? "" : "s"} found.")
+    else
+      output.push("No records found.")
+    end
+    stdout_or_return(output.flatten.compact)
+  end
+  
+  def format_result(result)
+    result_output = []
+    result.each do |key, value|
+      result_output.push(format_output(key, value))
+    end
+    if @type == 'users'
+      result_output = result_output + find_associated_records(result)
+    end
+    result_output.push("\n")
+    result_output
+  end
+  
+  def format_output(key, value)
+    if has_array_value?(key)
+      format_string(key, value.join(", "))
+    elsif %w(submitter_id assignee_id).include?(key) && value
+      get_user(key, value)
+    elsif key == 'organization_id'
+      get_organization(value)
+    else
+      format_string(key, value)
+    end
+  end
+  
+  def find_associated_records(result)
+    output = []
+    data = get_json('tickets')
+    submitted_tickets = data.select{ |ticket| ticket['submitter_id'] == result['_id'] }
+    assigned_tickets = data.select{ |ticket| ticket['assignee_id'] == result['_id'] }
+    submitted_tickets.each_with_index do |ticket, i|
+      output.push(format_ticket(ticket['subject'], i, 'submitted'))
+    end
+    assigned_tickets.each_with_index do |ticket, i|
+      output.push(format_ticket(ticket['subject'], i, 'assigned'))
+    end
+    output
+  end
+  
+  def format_ticket(subject, index, modifier)
+    format_string("#{modifier} ticket#{index}", subject)
+  end
+  
+  def format_string(key, value)
+    sprintf("%-20s %s \n", key, value)
+  end
+  
+  def has_array_value?(key)
+    # include any attribute with an array value in this list for proper searching and formatting
+    %w(tags domain_names).include?(key)
+  end
+
+  def get_user(key, id)
+    data = get_json('users')
+    user = data.select{|user| user["_id"] == id }.first
+    if user
+      format_string(key.chomp("_id"), user['name'])
+    end
+  end
+
+  def get_organization(id)
+    data = get_json('organizations')
+    organization = data.select{|org| org['_id'] == id }.first
+    format_string('organization', organization['name'])
+  end
+  
+  # End formatting methods
 end
 
 search_engine = SearchEngine.new
