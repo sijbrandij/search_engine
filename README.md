@@ -15,7 +15,8 @@ require 'json'
 If this returns `false`, run `gem install json` in your terminal.
 ## Instructions for use
 
-Go to the document root in your terminal and type `ruby search_engine.rb` to start a new search.
+Start a new search: `ruby search_engine.rb run`
+Run the tests: `ruby search_engine_test.rb`
 
 ## Contributing
 To add a new record type to the search engine (f.e. events), follow these steps:
