@@ -51,8 +51,8 @@ class SearchEngine
   def set_type(command=nil)
     stdout_or_return(type_prompt)
     command ||= get_user_input
-    type_index = command
     return false if type_index == 'quit'
+    type_index = command
     if [1,2,3].include?(type_index.to_i) # non-numerical inputs will be converted to 0
       @type = FILE_TYPES[type_index.to_i-1]
       true
@@ -68,8 +68,8 @@ class SearchEngine
     ]
     stdout_or_return(prompt)
     command ||= get_user_input
-    @term = command
     return false if @term == 'quit'
+    @term = command
     if valid_search_terms(@type).include?(@term)
       true
     else
@@ -80,8 +80,8 @@ class SearchEngine
   def set_value(command=nil)
     stdout_or_return(["Enter search value"])
     command ||= get_user_input
-    @value = command
     return false if @value == 'quit'
+    @value = command
     true
   end
 
