@@ -69,8 +69,8 @@ class SearchEngine
     stdout_or_return(prompt)
     command ||= get_user_input
     return false if command == 'quit'
-    @term = command
-    if valid_search_terms(@type).include?(@term)
+    if valid_search_terms(@type).include?(command)
+      @term = command
       true
     else
       signal_invalid_input
@@ -221,8 +221,8 @@ class SearchEngine
   def find_associated_records(result)
     output = []
     data = get_json('tickets')
-    submitted_tickets = data.select{ |ticket| ticket['submitter_id'] == result['_id'] }
-    assigned_tickets = data.select{ |ticket| ticket['assignee_id'] == result['_id'] }
+    submitted_tickets, assigned_tickets = find_submitted_and_assigned_tickets(result['_id'], data)
+    
     submitted_tickets.each_with_index do |ticket, i|
       output.push(format_ticket(ticket['subject'], i, 'submitted'))
     end
@@ -230,6 +230,12 @@ class SearchEngine
       output.push(format_ticket(ticket['subject'], i, 'assigned'))
     end
     output
+  end
+  
+  def find_submitted_and_assigned_tickets(id, data)
+    submitted_tickets = data.select{ |ticket| ticket['submitter_id'] == id }
+    assigned_tickets = data.select{ |ticket| ticket['assignee_id'] == id }
+    return submitted_tickets, assigned_tickets
   end
   
   def format_ticket(subject, index, modifier)
