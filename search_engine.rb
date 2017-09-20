@@ -130,9 +130,7 @@ class SearchEngine
   def print_search
     stdout_or_return(["Searching #{@type} for #{@term} with a value of #{@value}"])
   end
-  
-  private
-  
+    
   def get_user_input
     $stdin.gets.chomp
   end
@@ -153,8 +151,10 @@ class SearchEngine
   end
   
   def get_json(type)
-    file = File.read("#{type}.json")
-    JSON.parse(file)
+    if File.exists?("#{type}.json")
+      file = File.read("#{type}.json")
+      JSON.parse(file)
+    end
   end
   
   def search_empty_values(data)
@@ -177,6 +177,7 @@ class SearchEngine
       types << "#{i+1}) #{file_type.capitalize}"
     end
     output.push("Select " + types.join(", "))
+    output
   end
   
   # Formatting methods
@@ -220,8 +221,7 @@ class SearchEngine
   
   def find_associated_records(result)
     output = []
-    data = get_json('tickets')
-    submitted_tickets, assigned_tickets = find_submitted_and_assigned_tickets(result['_id'], data)
+    submitted_tickets, assigned_tickets = find_submitted_and_assigned_tickets(result['_id'])
     
     submitted_tickets.each_with_index do |ticket, i|
       output.push(format_ticket(ticket['subject'], i, 'submitted'))
@@ -232,7 +232,8 @@ class SearchEngine
     output
   end
   
-  def find_submitted_and_assigned_tickets(id, data)
+  def find_submitted_and_assigned_tickets(id)
+    data = get_json('tickets')
     submitted_tickets = data.select{ |ticket| ticket['submitter_id'] == id }
     assigned_tickets = data.select{ |ticket| ticket['assignee_id'] == id }
     return submitted_tickets, assigned_tickets
@@ -243,7 +244,7 @@ class SearchEngine
   end
   
   def format_string(key, value)
-    sprintf("%-20s %s \n", key, value)
+    sprintf("%-20s %s\n", key, value)
   end
   
   def has_array_value?(key)

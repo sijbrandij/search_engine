@@ -152,4 +152,189 @@ describe SearchEngine do
       assert_equal ["Searching users for alias with a value of The incredible"], @search.print_search
     end
   end
+  
+  describe 'signal_invalid_input' do
+    it 'returns false' do
+      refute @search.signal_invalid_input
+    end
+  end
+  
+  describe 'get_json' do
+    it 'returns data hash if file exists' do
+      assert @search.get_json('users')
+    end
+    
+    it 'returns nil for non-existent file' do
+      assert_nil @search.get_json('non-existent.json')
+    end
+  end
+  
+  describe 'search_empty_values' do
+    it 'searches empty values for terms that have array vales' do
+      @search.term = 'domain_names'
+      data = JSON.parse(File.read('organizations.json'))
+      assert_equal [], @search.search_empty_values(data)
+    end
+    
+    it 'searches empty values for terms that have non-array value' do
+      @search.term = 'description'
+      data = JSON.parse(File.read('organizations.json'))
+      assert_equal 26, @search.search_empty_values(data).count
+    end
+  end
+  
+  describe 'valid_search_terms' do
+    it 'returns an array of search terms' do
+      assert_equal 16, @search.valid_search_terms('tickets').count
+    end
+  end
+  
+  describe 'type_prompt' do
+    it 'returns an array' do
+      assert_equal Array, @search.type_prompt.class
+    end
+  end
+  
+  describe 'printout' do
+    it 'returns "no records found" if there are no results' do
+      assert_equal ["No records found."], @search.printout
+    end
+    
+    it 'returns a array containing results' do
+      @search.type = 'organizations'
+      @search.term = '_id'
+      @search.value = 101
+      @search.search
+      assert_equal 11, @search.printout.count
+    end
+    
+    it 'includes a line with total results found' do
+      @search.type = 'organizations'
+      @search.term = '_id'
+      @search.value = 101
+      @search.search
+      assert_equal "1 record found.", @search.printout.last 
+    end
+  end
+  
+  describe 'format_result' do
+    it 'formats result' do
+      @search.type = 'tickets'
+      result = {
+        "_id": "436bf9b0-1147-4c0a-8439-6f79833bff5b",
+        "url": "http://initech.zendesk.com/api/v2/tickets/436bf9b0-1147-4c0a-8439-6f79833bff5b.json",
+        "external_id": "9210cdc9-4bee-485f-a078-35396cd74063",
+        "created_at": "2016-04-28T11:19:34 -10:00",
+        "type": "incident",
+        "subject": "A Catastrophe in Korea (North)",
+        "description": "Nostrud ad sit velit cupidatat laboris ipsum nisi amet laboris ex exercitation amet et proident. Ipsum fugiat aute dolore tempor nostrud velit ipsum.",
+        "priority": "high",
+        "status": "pending",
+        "submitter_id": 38,
+        "assignee_id": 24,
+        "organization_id": 116,
+        "tags": [
+          "Ohio",
+          "Pennsylvania",
+          "American Samoa",
+          "Northern Mariana Islands"
+        ],
+        "has_incidents": false,
+        "due_at": "2016-07-31T02:37:50 -10:00",
+        "via": "web"
+      }
+      output = @search.format_result(result)
+      assert_equal result.keys.size+1, output.length
+      assert_equal Array, output.class
+    end
+    
+    it 'adds lines for tickets to users' do
+      @search.type = 'users'
+      result = {
+        "_id": 1,
+        "url": "http://initech.zendesk.com/api/v2/users/1.json",
+        "external_id": "74341f74-9c79-49d5-9611-87ef9b6eb75f",
+        "name": "Francisca Rasmussen",
+        "alias": "Miss Coffey",
+        "created_at": "2016-04-15T05:19:46 -10:00",
+        "active": true,
+        "verified": true,
+        "shared": false,
+        "locale": "en-AU",
+        "timezone": "Sri Lanka",
+        "last_login_at": "2013-08-04T01:03:27 -10:00",
+        "email": "coffeyrasmussen@flotonic.com",
+        "phone": "8335-422-718",
+        "signature": "Don't Worry Be Happy!",
+        "organization_id": 119,
+        "tags": [
+          "Springville",
+          "Sutton",
+          "Hartsville/Hartley",
+          "Diaperville"
+        ],
+        "suspended": true,
+        "role": "admin"
+      }
+      output = @search.format_result(result)
+      assert_equal result.keys.length+5, output.length
+      assert_equal [true], output[19..-2].map{|el| el.include?('ticket')}.uniq
+    end
+  end
+  
+  describe 'format_output' do
+    it 'returns array as joined string' do
+      assert_equal "tags                 Ohio, Montana", @search.format_output('tags', ['Ohio', 'Montana']).chomp
+    end
+    
+    it 'returns user name instead of id' do
+      assert_equal "submitter            Francisca Rasmussen", @search.format_output('submitter_id', 1).chomp
+    end
+    
+    it 'returns organization name instead of organization id' do
+      assert_equal "organization         Enthaze", @search.format_output('organization_id', 101).chomp
+    end
+  end
+  
+  describe 'find_submitted_and_assigned_records' do
+    it 'returns two variables with records' do
+      submitted, assigned = @search.find_submitted_and_assigned_tickets(1)
+      assert_equal 2, submitted.count
+      assert_equal 2, assigned.count
+    end
+  end
+  
+  describe 'format_ticket' do
+    it 'returns formatted string' do
+      assert_equal "assigned ticket0     Some ticket", @search.format_ticket('Some ticket', 0, 'assigned').chomp
+    end
+  end
+  
+  describe 'format_string' do
+    it 'returns formatted string' do
+      assert_equal "some key             some value", @search.format_string('some key', 'some value').chomp
+    end
+  end
+  
+  describe 'has_array_value?' do
+    it 'returns true for terms with array values' do
+      assert @search.has_array_value?('tags')
+    end
+    
+    it 'returns false for terms that do not have array values' do
+      refute @search.has_array_value?('_id')
+    end
+  end
+  
+  describe 'get_user' do
+    it 'returns formatted user' do
+      assert_equal "submitter            Francisca Rasmussen", @search.get_user('submitter_id', 1).chomp
+    end
+  end
+  
+  describe 'get_organization' do
+    it 'returns formatted organization' do
+      assert_equal "organization         Enthaze", @search.get_organization(101).chomp
+    end
+  end
 end
